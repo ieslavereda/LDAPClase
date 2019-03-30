@@ -10,11 +10,12 @@ import es.ieslavereda.common.Persona;
 import es.ieslavereda.common.Profesor;
 import es.ieslavereda.ldap.LDAP;
 
+
 public class Test {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		
+						
 		ArrayList<Persona> listado = new ArrayList<Persona>();
 		
 		LDAP ldap = new LDAP();

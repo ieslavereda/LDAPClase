@@ -10,6 +10,10 @@ import javax.swing.JLabel;
 
 public class TestFrame extends JFrame {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -5994951929584219337L;
 	private JPanel contentPane;
 	public JLabel label;
 

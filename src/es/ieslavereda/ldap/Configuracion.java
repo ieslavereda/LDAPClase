@@ -19,13 +19,16 @@ public class Configuracion {
 	private String port;
 	private String user;
 	private String password;
+	private String isBDPasswordEncripted;
 	private String database;
 
 	// Propiedades para LDAP
 	private String ldapUsername;
 	private String ldapPassword;
+	private String isLdapPasswordEncripted;
 	private String servername;
 	private String shema_base;
+	
 
 	/**
 	 * Genera un objeto para el almacenaje de propiedades, utilizando el fichero
@@ -48,10 +51,12 @@ public class Configuracion {
 				prop.setProperty("database", "database");
 				prop.setProperty("user", "user");
 				prop.setProperty("password", "password");
-				
+				prop.setProperty("is.password.encripted", "false");
+
 				// Propiedades para LDAP
 				prop.setProperty("ldapUsername", "cn=admin,dc=ieslavereda,dc=local");
 				prop.setProperty("ldapPassword", "passwordForLDAP");
+				prop.setProperty("is.ldapPassword.encrypted", "false");
 				prop.setProperty("servername", "ldap://10.0.0.243:389");
 				prop.setProperty("shema_base", "dc=ieslavereda,dc=local");
 
@@ -97,15 +102,28 @@ public class Configuracion {
 				prop.setProperty("database", database);
 				prop.setProperty("user", user);
 				prop.setProperty("password", password);
+				prop.setProperty("is.password.encripted", isBDPasswordEncripted);
 
 				// Propiedades para LDAP
 				prop.setProperty("ldapUsername", ldapUsername);
 				prop.setProperty("ldapPassword", ldapPassword);
+				prop.setProperty("is.ldapPassword.encrypted", isLdapPasswordEncripted);
 				prop.setProperty("servername", servername);
 				prop.setProperty("shema_base", shema_base);
 
 				// save properties to project root folder
 				prop.store(output, null);
+
+				// Encriptamos passwords
+				try {
+					new EncryptDecrypt(FICHERO, "ldapPassword", "is.ldapPassword.encrypted");
+					new EncryptDecrypt(FICHERO, "password", "is.password.encripted");
+
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
 				guardado = true;
 
 				return guardado;
@@ -131,8 +149,14 @@ public class Configuracion {
 
 		prop = new Properties();
 		InputStream input = null;
+		
 
 		try {
+			// Encriptamos las claves si fuera necesario antes de leer las propiedades
+			new EncryptDecrypt(FICHERO, "password", "is.password.encripted").getDecryptedUserPassword();
+			new EncryptDecrypt(FICHERO, "ldapPassword", "is.ldapPassword.encrypted")
+			.getDecryptedUserPassword();
+			
 			input = new FileInputStream(FICHERO);
 
 			// Cargar archivo propiedades
@@ -142,17 +166,28 @@ public class Configuracion {
 			this.host = prop.getProperty("host");
 			this.port = prop.getProperty("port");
 			this.user = prop.getProperty("user");
-			this.password = prop.getProperty("password");
+
+			this.password = new EncryptDecrypt(FICHERO, "password", "is.password.encripted").getDecryptedUserPassword();
+			this.isBDPasswordEncripted = prop.getProperty("is.password.encripted");
+
 			this.database = prop.getProperty("database");
 
 			// Obtener propiedades de LDAP
 			this.ldapUsername = prop.getProperty("ldapUsername");
-			this.ldapPassword = prop.getProperty("ldapPassword");
+
+			this.ldapPassword = new EncryptDecrypt(FICHERO, "ldapPassword", "is.ldapPassword.encrypted")
+					.getDecryptedUserPassword();
+			
+			this.isLdapPasswordEncripted = prop.getProperty("is.ldapPassword.encrypted");
+
 			this.servername = prop.getProperty("servername");
 			this.shema_base = prop.getProperty("shema_base");
 
 		} catch (IOException ex) {
 			ex.printStackTrace();
+		} catch (Exception e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		} finally {
 			if (input != null) {
 				try {
