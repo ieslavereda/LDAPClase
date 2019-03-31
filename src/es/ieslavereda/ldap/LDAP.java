@@ -21,16 +21,17 @@ import javax.naming.ldap.LdapContext;
 import es.ieslavereda.common.Alumno;
 import es.ieslavereda.common.Persona;
 import es.ieslavereda.common.Profesor;
-import es.ieslavereda.ldap.Configuracion;
+import es.ieslavereda.configuracion.ConfiguracionSegura;
+
 
 public class LDAP {
 
 	Hashtable<String, String> env = new Hashtable<String, String>();
-	Configuracion conf;
+	ConfiguracionSegura conf;
 
 	public LDAP() {
 
-		conf = new Configuracion();
+		conf = new ConfiguracionSegura();
 
 		env.put(DirContext.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
 		env.put(DirContext.PROVIDER_URL, conf.getServername() + "/" + conf.getShema_base());

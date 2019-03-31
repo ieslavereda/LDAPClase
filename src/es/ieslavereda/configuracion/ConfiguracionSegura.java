@@ -1,4 +1,4 @@
-package es.ieslavereda.ldap;
+package es.ieslavereda.configuracion;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -6,36 +6,45 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
-public class Configuracion {
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 
+public class ConfiguracionSegura {
 	private final String FICHERO = "default.config.properties";
 
-	private Properties prop;
+	private LinkedProperties prop;
+	private String key = "ieslavereda.es";
+	Map<String, String> propiedadesSeguras;
 
 	// Propiedades para la BD
 	private String host;
 	private String port;
 	private String user;
 	private String password;
-	private String isBDPasswordEncripted;
 	private String database;
 
 	// Propiedades para LDAP
 	private String ldapUsername;
 	private String ldapPassword;
-	private String isLdapPasswordEncripted;
 	private String servername;
 	private String shema_base;
-	
 
 	/**
 	 * Genera un objeto para el almacenaje de propiedades, utilizando el fichero
 	 * default.config.properties
 	 */
-	public Configuracion() {
-		prop = new Properties();
+	public ConfiguracionSegura() {
+
+		propiedadesSeguras = new HashMap<String, String>();
+		propiedadesSeguras.put("password", "is.password.encripted");
+		propiedadesSeguras.put("ldapPassword", "is.ldapPassword.encrypted");
+
+		prop = new LinkedProperties();
 		OutputStream output = null;
 
 		File fc = new File(FICHERO);
@@ -94,20 +103,20 @@ public class Configuracion {
 			try {
 
 				output = new FileOutputStream(FICHERO);
-				prop = new Properties();
+				prop = new LinkedProperties();
 
 				// Propiedades para la BD
 				prop.setProperty("host", host);
 				prop.setProperty("port", port);
 				prop.setProperty("database", database);
 				prop.setProperty("user", user);
-				prop.setProperty("password", password);
-				prop.setProperty("is.password.encripted", isBDPasswordEncripted);
+				prop.setProperty("password", encrypt(password));
+				prop.setProperty("is.password.encripted", "true");
 
 				// Propiedades para LDAP
 				prop.setProperty("ldapUsername", ldapUsername);
-				prop.setProperty("ldapPassword", ldapPassword);
-				prop.setProperty("is.ldapPassword.encrypted", isLdapPasswordEncripted);
+				prop.setProperty("ldapPassword", encrypt(ldapPassword));
+				prop.setProperty("is.ldapPassword.encrypted", "true");
 				prop.setProperty("servername", servername);
 				prop.setProperty("shema_base", shema_base);
 
@@ -115,14 +124,8 @@ public class Configuracion {
 				prop.store(output, null);
 
 				// Encriptamos passwords
-				try {
-					new EncryptDecrypt(FICHERO, "ldapPassword", "is.ldapPassword.encrypted");
-					new EncryptDecrypt(FICHERO, "password", "is.password.encripted");
-
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				for (String property : propiedadesSeguras.keySet())
+					encryptPropertyValue(property, propiedadesSeguras.get(property));
 
 				guardado = true;
 
@@ -131,6 +134,9 @@ public class Configuracion {
 			} catch (IOException io) {
 				io.printStackTrace();
 				return guardado;
+			} catch (ConfigurationException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
 			} finally {
 				if (output != null) {
 					try {
@@ -147,19 +153,17 @@ public class Configuracion {
 
 	private void cargar() {
 
-		prop = new Properties();
-		InputStream input = null;
-		
-
 		try {
-			// Encriptamos las claves si fuera necesario antes de leer las propiedades
-			new EncryptDecrypt(FICHERO, "password", "is.password.encripted").getDecryptedUserPassword();
-			new EncryptDecrypt(FICHERO, "ldapPassword", "is.ldapPassword.encrypted")
-			.getDecryptedUserPassword();
-			
-			input = new FileInputStream(FICHERO);
+			prop = new LinkedProperties();
+			InputStream input = null;
+
+			// Encriptamos las claves si fuera necesario antes de leer las
+			// propiedades
+			for (String property : propiedadesSeguras.keySet())
+				encryptPropertyValue(property, propiedadesSeguras.get(property));
 
 			// Cargar archivo propiedades
+			input = new FileInputStream(FICHERO);
 			prop.load(input);
 
 			// Obtener propiedades de la base de datos
@@ -167,36 +171,67 @@ public class Configuracion {
 			this.port = prop.getProperty("port");
 			this.user = prop.getProperty("user");
 
-			this.password = new EncryptDecrypt(FICHERO, "password", "is.password.encripted").getDecryptedUserPassword();
-			this.isBDPasswordEncripted = prop.getProperty("is.password.encripted");
+			this.password = decryptPropertyValue("password");
 
 			this.database = prop.getProperty("database");
 
 			// Obtener propiedades de LDAP
 			this.ldapUsername = prop.getProperty("ldapUsername");
 
-			this.ldapPassword = new EncryptDecrypt(FICHERO, "ldapPassword", "is.ldapPassword.encrypted")
-					.getDecryptedUserPassword();
-			
-			this.isLdapPasswordEncripted = prop.getProperty("is.ldapPassword.encrypted");
+			this.ldapPassword = decryptPropertyValue("ldapPassword");
 
 			this.servername = prop.getProperty("servername");
 			this.shema_base = prop.getProperty("shema_base");
 
-		} catch (IOException ex) {
-			ex.printStackTrace();
-		} catch (Exception e1) {
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} finally {
-			if (input != null) {
-				try {
-					input.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
+			e.printStackTrace();
 		}
+	}
+
+	private void encryptPropertyValue(String propertyKey, String isPropertyKeyEncrypted) throws ConfigurationException {
+
+		// Apache Commons Configuration
+		PropertiesConfiguration prop = new PropertiesConfiguration(FICHERO);
+
+		// Retrieve boolean properties value to see if password is already
+		// encrypted or not
+		String isEncrypted = prop.getString(isPropertyKeyEncrypted);
+
+		// Check if password is encrypted?
+		if (isEncrypted.equals("false")) {
+			String tmpPwd = prop.getString(propertyKey);
+			String encryptedPassword = encrypt(tmpPwd);
+
+			// Overwrite password with encrypted password in the properties file
+			// using Apache Commons Cinfiguration library
+			prop.setProperty(propertyKey, encryptedPassword);
+			// Set the boolean flag to true to indicate future encryption
+			// operation that password is already encrypted
+			prop.setProperty(isPropertyKeyEncrypted, "true");
+			// Save the properties file
+			prop.save(FICHERO);
+		}
+	}
+
+	private String encrypt(String tmpPwd) {
+		// Encrypt
+		StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
+		encryptor.setPassword(key);
+		String encryptedPassword = encryptor.encrypt(tmpPwd);
+		return encryptedPassword;
+	}
+
+	private String decryptPropertyValue(String propertyKey) throws ConfigurationException {
+		// System.out.println("Starting decryption");
+		PropertiesConfiguration prop = new PropertiesConfiguration(FICHERO);
+		String encryptedPropertyValue = prop.getString(propertyKey);
+
+		StandardPBEStringEncryptor encryptor = new StandardPBEStringEncryptor();
+		encryptor.setPassword(key);
+		String decryptedPropertyValue = encryptor.decrypt(encryptedPropertyValue);
+
+		return decryptedPropertyValue;
 	}
 
 	/**
@@ -340,5 +375,4 @@ public class Configuracion {
 	public void setShema_base(String shema_base) {
 		this.shema_base = shema_base;
 	}
-
 }
