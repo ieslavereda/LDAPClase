@@ -39,7 +39,7 @@ public class LDAP {
 		env.put(DirContext.SECURITY_AUTHENTICATION, "simple");
 		env.put(DirContext.SECURITY_PRINCIPAL, conf.getLdapUsername());
 		env.put(DirContext.SECURITY_CREDENTIALS, conf.getLdapPassword());
-
+		
 	}
 
 	// Metodo que devuelve true o false si la busqueda ofrece algun resultado
