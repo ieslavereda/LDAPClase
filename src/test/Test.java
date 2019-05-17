@@ -26,10 +26,16 @@ public class Test {
 		//Listar miembros de un grupo
 		listado = ldap.memberOf("Docente");
 		System.out.println(listado);
+		
+		Profesor docente = new Profesor();
+		docente.setUid("jfajardo");
+		ldap.obtenerUsuarioLDAPByUID(docente);
 				
 		// Autentificamos el usuario		
 		System.out.println("Es correcto el password:"+ldap.autenticacionLDAP("jfajardo", "1111"));;
 		
+		// Pertenece a un grupo
+		System.out.println("Pertenece al grupo Docente: "+ldap.search("cn=Docente,ou=groups","memberUid="+docente.getUidNumber()));
 
 
 
