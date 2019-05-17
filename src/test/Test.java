@@ -18,7 +18,7 @@ public class Test {
 		// TODO Auto-generated method stub
 		
 		ConfiguracionSegura conf = new ConfiguracionSegura();
-		conf.setLdapPassword("A77M02D28");
+		conf.setLdapPassword("1111");
 		conf.guardar();
 		
 		ArrayList<Persona> listado = new ArrayList<Persona>();
