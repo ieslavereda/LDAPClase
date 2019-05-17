@@ -23,14 +23,12 @@ public class Test {
 		
 		LDAP ldap = new LDAP();
 	
-
-		
 		//Listar miembros de un grupo
 		listado = ldap.memberOf("Docente");
 		System.out.println(listado);
 				
 		// Autentificamos el usuario		
-		System.out.println("Es correcto el password:"+ldap.autenticacionLDAP("jfajardo", "1121"));;
+		System.out.println("Es correcto el password:"+ldap.autenticacionLDAP("jfajardo", "1111"));;
 		
 
 

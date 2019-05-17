@@ -529,12 +529,13 @@ public class LDAP {
 	 */
 	public ArrayList<Persona> memberOf(String grupo) {
 
-		String searchbase = "ou=Groups";
+		String searchbase = "ou=groups";
 		String searchfilter = "cn=" + grupo;
 
 		ArrayList<Persona> members = new ArrayList<Persona>();
 		Persona p = null;
 		String uid;
+		String uidNumber;
 
 		// the following is helpful in debugging errors //
 		// env.put("com.sun.jndi.ldap.trace.ber", System.err);
@@ -550,19 +551,25 @@ public class LDAP {
 				results = ctx.search(searchbase, searchfilter, controls);
 
 				while (results.hasMore()) {
+
 					SearchResult searchResult = (SearchResult) results.next();
 					Attributes attributes = searchResult.getAttributes();
 					Attribute attr = attributes.get("memberUid");
 
+				
 					for (int i = 0; i < attr.size(); i++) {
-						uid = (String) attr.get(i);
+						
+						uidNumber = (String) attr.get(i);
+						
+						
+						uid=searchAttribute("ou=users", "uidNumber="+uidNumber, "uid");
 
-						if (search("uid=" + uid + ",ou=Users", "objectClass=profesor")) {
+						if (search("uid=" + uid + ",ou=users", "objectClass=profesor")) {
 							p = new Profesor();
 							p.setUid(uid);
 							obtenerUsuarioLDAPByUID(p);
 
-						} else if (search("uid=" + (String) attr.get(i) + ",ou=Users", "objectClass=alumno")) {
+						} else if (search("uid=" + (String) attr.get(i) + ",ou=users", "objectClass=alumnos")) {
 							p = new Alumno();
 							p.setUid(uid);
 							obtenerUsuarioLDAPByUID(p);
