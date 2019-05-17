@@ -29,7 +29,7 @@ public class Test {
 		listado = ldap.memberOf("Docente");
 		System.out.println(listado);
 				
-		// Autentificamos			
+		// Autentificamos el usuario		
 		System.out.println("Es correcto el password:"+ldap.autenticacionLDAP("jfajardo", "1121"));;
 		
 		
